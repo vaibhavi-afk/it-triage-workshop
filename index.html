@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IT Issue Intake and Triage · Agent Build</title>
+<meta name="description" content="Follow-along guide for building an IT issue intake and triage agent in Lyzr Agent Studio, with an Architect prompt for the multi-agent version.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --lyzr-orange:#FE4B1E; --lyzr-offwhite:#FAFAF9; --lyzr-black:#1F2022; --lyzr-stone:#A8A298;
+  --grey-100:#F1F0EE; --grey-200:#E3E1DE; --grey-300:#CFCCC7; --grey-600:#8A857C; --grey-700:#6B675F; --grey-800:#4A4744;
+  --font-sans:"Aeonik","Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  color-scheme: light;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:24px}
+body{margin:0;background:var(--lyzr-offwhite);color:var(--lyzr-black);font-family:var(--font-sans);font-weight:400;font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased}
+strong,b,h1,h2,h3,th{font-weight:400}
+strong{color:var(--lyzr-black)}
+a{color:var(--lyzr-black);text-decoration:underline;text-decoration-color:var(--grey-300);text-underline-offset:3px}
+a:hover{text-decoration-color:var(--lyzr-black)}
+.eyebrow{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.06em;font-size:12px;color:var(--grey-700);margin:0 0 8px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);max-width:1240px;margin:0 auto}
+aside{position:sticky;top:0;height:100vh;overflow:auto;padding:40px 24px;border-right:1px solid var(--grey-200)}
+aside .eyebrow{margin-bottom:16px}
+aside ol{list-style:none;margin:0;padding:0}
+aside li{margin:0}
+aside li a{display:flex;gap:12px;padding:7px 0;text-decoration:none;color:var(--grey-700);font-size:15px;line-height:1.35}
+aside li a:hover,aside li a.active{color:var(--lyzr-black)}
+aside .num{font-family:var(--font-mono);font-size:11px;letter-spacing:.04em;padding-top:3px;color:var(--grey-600)}
+main{padding:56px 48px 96px;min-width:0}
+header.hero{padding-bottom:40px;margin-bottom:16px;border-bottom:1px solid var(--grey-200)}
+header.hero .eyebrow{color:var(--lyzr-orange)}
+h1{font-size:clamp(36px,5vw,56px);line-height:1.05;letter-spacing:-.035em;margin:0 0 20px;max-width:16ch}
+header.hero p{font-size:20px;line-height:1.4;letter-spacing:-.01em;color:var(--grey-800);max-width:58ch;margin:0}
+.hero-meta{display:flex;flex-wrap:wrap;gap:8px 24px;margin-top:24px;font-family:var(--font-mono);font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--grey-700)}
+section{padding:48px 0;border-bottom:1px solid var(--grey-200)}
+section:last-child{border-bottom:0}
+h2{font-size:clamp(28px,3.4vw,36px);line-height:1.15;letter-spacing:-.025em;margin:0 0 20px}
+h3{font-size:21px;line-height:1.4;letter-spacing:-.01em;margin:36px 0 12px}
+p,li{max-width:68ch}
+p{margin:0 0 16px}
+.lead{font-size:20px;line-height:1.45;letter-spacing:-.01em}
+ol,ul{padding-left:22px;margin:0 0 16px}
+li{margin:6px 0}
+li::marker{color:var(--grey-600);font-family:var(--font-mono);font-size:.85em}
+code{font-family:var(--font-mono);font-size:.84em;background:var(--grey-100);border:1px solid var(--grey-200);border-radius:4px;padding:1px 5px;word-break:break-word}
+.note{color:var(--grey-700);font-size:15px}
+.fields{display:grid;grid-template-columns:1fr;gap:12px;margin:24px 0 28px}
+.field{border:1px solid var(--grey-200);border-radius:6px;background:#FFFFFF;overflow:hidden}
+.field-head{display:flex;justify-content:space-between;align-items:center;min-height:42px;padding:6px 12px 6px 16px;border-bottom:1px solid var(--grey-200);background:var(--grey-100)}
+.field-val{padding:12px 16px;font-size:16px;line-height:1.5}
+.field.plain{background:transparent}
+.field.plain .field-head{background:transparent}
+.outcome-label{margin-top:4px}
+dl.outcome{display:grid;grid-template-columns:150px minmax(0,1fr);gap:0;margin:8px 0 32px;border:1px solid var(--grey-200);border-radius:6px;background:#FFFFFF;overflow:hidden}
+dl.outcome dt{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.06em;font-size:11px;color:var(--grey-700);padding:12px 14px;background:var(--grey-100);border-bottom:1px solid var(--grey-200)}
+dl.outcome dd{margin:0;padding:10px 16px;border-bottom:1px solid var(--grey-200);font-size:15px;line-height:1.5}
+dl.outcome dt:last-of-type,dl.outcome dd:last-of-type{border-bottom:0}
+.codewrap{margin:16px 0 24px;border:1px solid var(--grey-200);border-radius:6px;background:#FFFFFF;overflow:hidden}
+.code-head{display:flex;justify-content:space-between;align-items:center;padding:8px 12px 8px 16px;border-bottom:1px solid var(--grey-200);background:var(--grey-100)}
+.code-label{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.06em;font-size:11.5px;color:var(--grey-700)}
+button.copy{font-family:var(--font-sans);font-size:14px;background:transparent;color:var(--lyzr-black);border:1px solid var(--lyzr-black);border-radius:4px;padding:4px 14px;cursor:pointer}
+button.copy:hover{background:var(--lyzr-black);color:var(--lyzr-offwhite)}
+button.copy.done{border-color:var(--grey-600);color:var(--grey-700);background:transparent}
+pre{margin:0;padding:16px;overflow:auto;max-height:520px;font-family:var(--font-mono);font-size:13px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+pre code{background:none;border:0;padding:0;font-size:inherit}
+.tablewrap{overflow-x:auto;margin:16px 0 24px;border:1px solid var(--grey-200);border-radius:6px;background:#FFFFFF}
+table{border-collapse:collapse;width:100%;font-size:15px;line-height:1.45}
+th{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.05em;font-size:11.5px;color:var(--grey-700);text-align:left;background:var(--grey-100)}
+th,td{padding:10px 14px;border-bottom:1px solid var(--grey-200);vertical-align:top}
+tbody tr:last-child td{border-bottom:0}
+td.num{font-family:var(--font-mono);font-size:13px;white-space:nowrap}
+figure{margin:24px 0}
+.diagram{width:100%;height:auto;display:block;background:#FFFFFF;border:1px solid var(--grey-200);border-radius:6px}
+.d-title{font-family:var(--font-sans);font-size:15px;fill:var(--lyzr-black)}
+.d-name{font-family:var(--font-sans);font-size:14px;fill:var(--lyzr-black)}
+.d-sub{font-family:var(--font-sans);font-size:12px;fill:var(--grey-700)}
+.d-mono{font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;fill:var(--grey-700)}
+figcaption{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.06em;font-size:11.5px;color:var(--grey-700);margin-top:10px}
+.filelink{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.06em;font-size:12px}
+.tests{margin:12px 0 8px;display:grid;gap:10px}
+details.test{border:1px solid var(--grey-200);border-radius:6px;background:#FFFFFF}
+details.test summary{list-style:none;cursor:pointer;display:flex;align-items:baseline;gap:14px;padding:13px 16px;font-size:16px}
+details.test summary::-webkit-details-marker{display:none}
+details.test summary::after{content:"+";margin-left:auto;font-family:var(--font-mono);color:var(--grey-600);font-size:16px}
+details.test[open] summary::after{content:"\2212"}
+details.test[open] summary{border-bottom:1px solid var(--grey-200)}
+details.test summary:hover{background:var(--grey-100)}
+.tid{font-family:var(--font-mono);font-size:11.5px;letter-spacing:.06em;color:var(--grey-700);min-width:24px}
+.test-body{padding:4px 16px 4px}
+.test-body .codewrap{margin:12px 0 16px}
+.test-body dl.outcome{margin-bottom:16px}
+footer{margin-top:48px;font-family:var(--font-mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--grey-600)}
+@media (max-width:900px){
+  .layout{grid-template-columns:1fr}
+  aside{position:static;height:auto;border-right:0;border-bottom:1px solid var(--grey-200);padding:20px 16px}
+  aside ol{display:flex;flex-wrap:wrap;gap:4px 16px}
+  aside li a{padding:4px 0;font-size:14px}
+  main{padding:32px 16px 64px}
+  dl.outcome{grid-template-columns:1fr}
+  dl.outcome dt{border-bottom:0;padding:10px 14px 4px}
+  dl.outcome dd{padding:4px 14px 12px}
+}
+@media print{
+  details.test{break-inside:avoid}
+  aside,button.copy{display:none}
+  .layout{display:block}
+  pre{max-height:none}
+}
+.bubble{background:#FFFFFF;border:1px solid var(--grey-200);border-radius:14px;padding:22px 24px;max-width:640px;margin:24px 0 12px}
+.who{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.avatar{width:36px;height:36px;border-radius:50%;background:var(--lyzr-black);color:var(--lyzr-offwhite);display:flex;align-items:center;justify-content:center;font-size:15px}
+.who .role{font-family:var(--font-mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--grey-700)}
+.msg{font-size:22px;line-height:1.35;letter-spacing:-.015em;margin:0 0 14px}
+.attach{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:12px;background:var(--grey-100);border:1px solid var(--grey-200);border-radius:6px;padding:6px 10px;color:var(--grey-800)}
+.shot{width:100%;display:block;border:1px solid var(--grey-200);border-radius:6px}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:20px 0 24px}
+.card{background:#FFFFFF;border:1px solid var(--grey-200);border-radius:8px;padding:16px 16px 18px;display:flex;flex-direction:column;gap:6px}
+.card.hi{border-color:var(--lyzr-orange);border-width:2px;padding:15px 15px 17px}
+.card .k{font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--grey-700)}
+.card .t{font-size:19px;letter-spacing:-.01em;line-height:1.2}
+.card .d{font-size:14.5px;line-height:1.45;color:var(--grey-700)}
+.card .ic{width:28px;height:28px;margin-bottom:6px}
+.why-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:20px 0 28px}
+.why-card{background:#FFFFFF;border:1px solid var(--grey-200);border-radius:8px;padding:20px;display:grid;grid-template-columns:64px 1fr;gap:16px;align-items:start}
+.why-card .t{font-size:20px;letter-spacing:-.015em;line-height:1.2;margin:2px 0 6px}
+.why-card .d{font-size:15px;line-height:1.45;color:var(--grey-700);margin:0}
+.scale{display:grid;grid-template-columns:1fr 48px 1fr;align-items:stretch;margin:20px 0 28px}
+.scale .col{background:#FFFFFF;border:1px solid var(--grey-200);border-radius:8px;padding:20px}
+.scale .col.big{border-color:var(--lyzr-black)}
+.scale .arrow{display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);color:var(--grey-600);font-size:20px}
+.stat{display:flex;align-items:baseline;gap:10px;margin:8px 0}
+.stat .n{font-size:34px;letter-spacing:-.03em;line-height:1;min-width:64px}
+.stat .l{font-size:15px;color:var(--grey-700)}
+.stages{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:16px 0 24px}
+.stage{background:#FFFFFF;border:1px solid var(--grey-200);border-radius:8px;padding:16px}
+.stage .k{font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--grey-700)}
+.stage .t{font-size:18px;margin:6px 0 6px;line-height:1.25}
+.stage .d{font-size:14.5px;color:var(--grey-700);line-height:1.45;margin:0}
+.honest{border-left:3px solid var(--lyzr-orange);padding:4px 0 4px 16px;margin:8px 0 16px;font-size:17px}
+@media (max-width:900px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.why-grid,.stages{grid-template-columns:1fr}.scale{grid-template-columns:1fr}.scale .arrow{transform:rotate(90deg);padding:8px}}
+
+</style>
+</head>
+<body>
+<div class="layout">
+<aside aria-label="Contents">
+<p class="eyebrow">Contents</p>
+<ol>
+<li><a href="#overview"><span class="num">01</span>Overview</a></li>
+<li><a href="#problem"><span class="num">02</span>The problem</a></li>
+<li><a href="#concepts"><span class="num">03</span>Agent concepts</a></li>
+<li><a href="#architecture"><span class="num">04</span>Architecture</a></li>
+<li><a href="#setup"><span class="num">05</span>Setup</a></li>
+<li><a href="#agent"><span class="num">06</span>Build the agent</a></li>
+<li><a href="#tests"><span class="num">07</span>Tests</a></li>
+<li><a href="#why-multi"><span class="num">08</span>Why multi-agent</a></li>
+<li><a href="#architect"><span class="num">09</span>Architect prompt</a></li>
+</ol>
+</aside>
+<main>
+<header class="hero">
+<p class="eyebrow">Lyzr Agent Studio · Session 1 build · IT operations</p>
+<h1>IT Issue Intake and Triage</h1>
+<p>A follow-along guide to building an agent that takes an IT issue a business user reports in plain language, works out what is wrong and how serious it is, checks it for compliance impact, and routes it to the right engineering team.</p>
+<div class="hero-meta"><span>Lyzr x WTW</span><span>1 agent in Studio</span><span>1 knowledge base</span><span>1 tool</span><span>Multi-agent in Architect</span></div>
+</header>
+
+<!-- 01 -->
+<section id="overview"><p class="eyebrow">01</p><h2>Overview</h2>
+<p class="lead">Live, we build one agent in Agent Studio that turns a business user's message into a correctly prioritised, compliance-checked ticket, routed to the right team. Then we hand the same problem to Architect and let it design a multi-agent system.</p>
+<p><strong>The problem.</strong> Issues reach IT as symptoms in plain language. Someone has to work out which system is affected, how serious it is, whether it creates a compliance risk and who should fix it. That takes hours or days and depends on who picks the ticket up.</p>
+<p><strong>What we build today.</strong></p>
+<ol>
+<li>A single <strong>IT Issue Triage Agent</strong> in Agent Studio, built in three steps: instructions, knowledge and a tool.</li>
+<li>A prompt for <strong>Architect</strong> that turns the same problem into a multi-agent system.</li>
+</ol>
+<p><strong>What we leave for Session 2.</strong> Guardrails and hallucination controls, running and comparing the Architect system, and making it production-ready.</p>
+</section>
+
+<!-- 02 -->
+<section id="problem"><p class="eyebrow">02</p><h2>The problem</h2>
+<p>Tom works in Operations. He has a client call tomorrow, and the client's report looks wrong.</p>
+<div class="bubble">
+<div class="who"><div class="avatar">T</div><div>Tom <span class="role">· Operations</span></div></div>
+<p class="msg">“Client reports are showing last month’s numbers, and the call is tomorrow.”</p>
+<span class="attach">▣ tom_report_screenshot.png</span>
+</div>
+<figure><img class="shot" src="files/tom_report_screenshot.png" alt="Client Reporting Portal for Northbridge Holdings UK showing the October report with data as of 30 September and a failed NDR-NIGHTLY refresh warning"><figcaption>What Tom attaches · synthetic demo screen</figcaption></figure>
+<p>Today this message waits in a queue. By the end of the build, the agent reads the screenshot, finds the failed data refresh, matches it to a past incident, flags the client data risk, and emails the right engineers, in under a minute.</p>
+</section>
+
+<!-- 03 -->
+<section id="concepts"><p class="eyebrow">03</p><h2>Agent concepts</h2>
+<h3 style="margin-top:0">What an agent is made of</h3>
+<p>An agent is a service whose next step is decided at runtime by a model, not hard-coded. Everything around the model is something engineers already know.</p>
+<div class="cards">
+<div class="card hi"><span class="k">01 · Model</span><span class="t">Reasons and decides</span><span class="d">Plans what to do next and when to use a tool</span></div>
+<div class="card"><span class="k">02 · Instructions</span><span class="t">The spec</span><span class="d">Role, goal, steps and rules it works to</span></div>
+<div class="card"><span class="k">03 · Tools</span><span class="t">API calls</span><span class="d">Actions in other systems, like sending an email</span></div>
+<div class="card"><span class="k">04 · Knowledge</span><span class="t">A search index</span><span class="d">Your documents, searched before it answers</span></div>
+<div class="card"><span class="k">05 · Memory</span><span class="t">Session state</span><span class="d">Context carried across turns of a conversation</span></div>
+<div class="card" style="border-style:dashed"><span class="k">06 · Guardrails · Session 2</span><span class="t">A validation layer</span><span class="d">Checks on what goes in and what comes out</span></div>
+</div>
+
+<h3>How knowledge retrieval works</h3>
+<figure><svg viewBox="0 0 760 270" role="img" aria-label="Documents are split into chunks, turned into embeddings and stored in an index once. Each question searches the index and the top chunks are used to answer with citations." class="diagram">
+<defs><marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8A857C"/></marker></defs>
+<text x="24" y="34" class="d-mono">ONCE, WHEN YOU ADD KNOWLEDGE</text>
+<g fill="#FFFFFF" stroke="#8A857C"><rect x="24" y="50" width="158" height="56" rx="6"/><rect x="214" y="50" width="158" height="56" rx="6"/><rect x="404" y="50" width="158" height="56" rx="6"/><rect x="594" y="50" width="142" height="56" rx="6"/></g>
+<text x="103" y="83" class="d-name" text-anchor="middle">Your documents</text>
+<text x="293" y="83" class="d-name" text-anchor="middle">Split into chunks</text>
+<text x="483" y="83" class="d-name" text-anchor="middle">Turned into vectors</text>
+<text x="665" y="83" class="d-name" text-anchor="middle">Index</text>
+<g stroke="#8A857C" stroke-width="1.25" fill="none"><path d="M184 78H210" marker-end="url(#a1)"/><path d="M374 78H400" marker-end="url(#a1)"/><path d="M564 78H590" marker-end="url(#a1)"/></g>
+<text x="24" y="160" class="d-mono">EVERY TIME SOMEONE ASKS</text>
+<g fill="#FFFFFF" stroke="#8A857C"><rect x="24" y="176" width="158" height="56" rx="6"/><rect x="214" y="176" width="158" height="56" rx="6"/><rect x="404" y="176" width="158" height="56" rx="6"/></g>
+<rect x="594" y="176" width="142" height="56" rx="6" fill="#FFFFFF" stroke="#FE4B1E" stroke-width="2"/>
+<text x="103" y="209" class="d-name" text-anchor="middle">Question</text>
+<text x="293" y="209" class="d-name" text-anchor="middle">Search the index</text>
+<text x="483" y="209" class="d-name" text-anchor="middle">Top matching chunks</text>
+<text x="665" y="203" class="d-name" text-anchor="middle">Answer with</text>
+<text x="665" y="220" class="d-name" text-anchor="middle">citations</text>
+<g stroke="#8A857C" stroke-width="1.25" fill="none"><path d="M184 204H210" marker-end="url(#a1)"/><path d="M374 204H400" marker-end="url(#a1)"/><path d="M564 204H590" marker-end="url(#a1)"/><path d="M665 108V128H293V172" stroke-dasharray="4 4" marker-end="url(#a1)"/></g>
+</svg><figcaption>Retrieval-augmented generation (RAG)</figcaption></figure>
+<p>The settings that matter most: how documents are chunked, how many chunks come back (top-k), and whether results are reranked before the model sees them.</p>
+</section>
+
+<!-- 04 -->
+<section id="architecture"><p class="eyebrow">04</p><h2>Architecture</h2>
+<p>One agent does the whole job. It reads the message and screenshot, looks things up in the knowledge base, decides, emails the owning team through Outlook and replies to the user.</p>
+<figure><svg viewBox="0 0 760 510" role="img" aria-label="A business user sends a message and screenshot to the IT Issue Triage Agent, which searches a knowledge base of five documents, emails the owning team through Outlook and replies with a triage summary" class="diagram">
+<defs><marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#8A857C"/></marker></defs>
+<text x="24" y="30" class="d-title">One agent reads, looks up, decides, routes and replies</text>
+<rect x="24" y="80" width="190" height="72" rx="6" fill="#FFFFFF" stroke="#8A857C"/>
+<text x="119" y="108" class="d-name" text-anchor="middle">Business user</text>
+<text x="119" y="126" class="d-sub" text-anchor="middle">message + screenshot</text>
+<text x="119" y="141" class="d-sub" text-anchor="middle">in chat</text>
+<rect x="280" y="68" width="210" height="96" rx="6" fill="#FFFFFF" stroke="#1F2022" stroke-width="1.5"/>
+<text x="385" y="100" class="d-name" text-anchor="middle">IT Issue Triage Agent</text>
+<text x="385" y="120" class="d-sub" text-anchor="middle">model + instructions</text>
+<text x="385" y="137" class="d-sub" text-anchor="middle">reads, assesses, routes</text>
+<rect x="556" y="80" width="180" height="72" rx="6" fill="#FFFFFF" stroke="#8A857C"/>
+<text x="646" y="108" class="d-name" text-anchor="middle">Outlook tool</text>
+<text x="646" y="126" class="d-sub" text-anchor="middle">emails the routed team</text>
+<rect x="556" y="196" width="180" height="56" rx="6" fill="#FFFFFF" stroke="#FE4B1E" stroke-width="2"/>
+<text x="646" y="220" class="d-name" text-anchor="middle">Owning team inbox</text>
+<text x="646" y="237" class="d-sub" text-anchor="middle">triage summary</text>
+<rect x="24" y="196" width="190" height="56" rx="6" fill="#FFFFFF" stroke="#FE4B1E" stroke-width="2"/>
+<text x="119" y="220" class="d-name" text-anchor="middle">Reply to the user</text>
+<text x="119" y="237" class="d-sub" text-anchor="middle">who has it, what happens next</text>
+<g fill="none" stroke="#8A857C" stroke-width="1.25">
+<path d="M216 116H276" marker-end="url(#a2)"/>
+<path d="M492 116H552" marker-end="url(#a2)"/>
+<path d="M646 154V192" marker-end="url(#a2)"/>
+<path d="M330 166V224H218" marker-end="url(#a2)"/>
+<path d="M440 166V290" marker-end="url(#a2)" marker-start="url(#a2)" stroke-dasharray="4 4"/>
+</g>
+<text x="448" y="280" class="d-sub">searches before deciding</text>
+<path d="M320 306V478A120 14 0 0 0 560 478V306" fill="#FFFFFF" stroke="#8A857C" stroke-width="1.25"/>
+<path d="M320 318A120 14 0 0 0 560 318" fill="none" stroke="#E3E1DE"/>
+<ellipse cx="440" cy="306" rx="120" ry="14" fill="#F1F0EE" stroke="#8A857C" stroke-width="1.25"/>
+<text x="440" y="350" class="d-name" text-anchor="middle">IT Ops Knowledge</text>
+<text x="440" y="368" class="d-sub" text-anchor="middle">knowledge base · 5 documents</text>
+<path d="M350 382H530" stroke="#E3E1DE"/>
+<g class="d-sub" text-anchor="middle"><text x="440" y="402">Systems and Ownership Register</text><text x="440" y="419">Team Roster and Escalation</text><text x="440" y="436">Runbooks</text><text x="440" y="453">Past Incidents</text><text x="440" y="470">Severity and Compliance Policy</text></g>
+</svg><figcaption>Single-agent design built in Studio today</figcaption></figure>
+</section>
+
+<!-- 05 -->
+<section id="setup"><p class="eyebrow">05</p><h2>Setup</h2>
+<h3 style="margin-top:0">The files</h3>
+<p>Six files, all synthetic. The systems, teams, incidents and rules were made up for the demo.</p>
+<div class="tablewrap"><table><thead><tr><th>File</th><th>What it holds</th><th>Goes into</th></tr></thead><tbody>
+<tr><td><a href="files/01_Systems_and_Ownership_Register.docx" download>01_Systems_and_Ownership_Register.docx</a></td><td>Six systems, what each does, owning team, client jurisdictions and the dependencies between them</td><td>Knowledge base</td></tr>
+<tr><td><a href="files/02_Team_Roster_and_Escalation.docx" download>02_Team_Roster_and_Escalation.docx</a></td><td>Teams, tiers L1 to L3, routing emails and escalation rules</td><td>Knowledge base</td></tr>
+<tr><td><a href="files/03_Runbooks.docx" download>03_Runbooks.docx</a></td><td>RB-011 stale portal data, RB-014 account locked, RB-022 calculation differences, RB-030 slow portal</td><td>Knowledge base</td></tr>
+<tr><td><a href="files/04_Past_Incidents.docx" download>04_Past_Incidents.docx</a></td><td>Four past incidents with root cause, resolver and time to fix</td><td>Knowledge base</td></tr>
+<tr><td><a href="files/05_Severity_Complexity_and_Compliance_Policy.docx" download>05_Severity_Complexity_and_Compliance_Policy.docx</a></td><td>Complexity L1 to L3, priority P1 to P4, compliance rules CMP-01 to CMP-05</td><td>Knowledge base</td></tr>
+<tr><td><a href="files/tom_report_screenshot.png" download>tom_report_screenshot.png</a></td><td>Client Reporting Portal showing October with September data and a failed refresh</td><td>Attach in chat for test T1</td></tr>
+</tbody></table></div>
+<p><a class="filelink" href="files/triage_demo_files.zip" download>Download all as a zip</a></p>
+
+<h3>Knowledge base</h3>
+<ol>
+<li>Go to <strong>Knowledge Base</strong>, click <strong>Create New</strong>, and create a knowledge base named <strong>IT Ops Knowledge</strong>.</li>
+<li>Upload the five .docx files.</li>
+<li>Set top-k to 5 and turn reranking on.</li>
+</ol>
+
+<h3>Tool</h3>
+<ol>
+<li>Connect <strong>Outlook</strong> in the tools section, with permission to send email.</li>
+<li>Send a test email to one of your test inboxes before the session.</li>
+</ol>
+
+<h3>Check before the session</h3>
+<ul>
+<li>Use a vision-capable model so the agent can read the screenshot. Temperature 0 to 0.2.</li>
+<li>Pre-build a finished copy of the agent as a backup.</li>
+<li>Run every test 3 to 4 times. Wording varies between runs; classification and routing should not.</li>
+</ul>
+</section>
+
+<!-- 06 -->
+<section id="agent"><p class="eyebrow">06</p><h2>Build the agent</h2>
+<p>We build the agent in one go, in three steps, then run Tom’s issue on the finished agent.</p>
+<div class="stages">
+<div class="stage"><span class="k">Step 1</span><p class="t">Instructions</p><p class="d">Name, role, goal and instructions. This is the spec the agent works to.</p></div>
+<div class="stage"><span class="k">Step 2</span><p class="t">Knowledge</p><p class="d">Attach IT Ops Knowledge so every fact comes from WTW’s own documents.</p></div>
+<div class="stage"><span class="k">Step 3</span><p class="t">Tool</p><p class="d">Connect Outlook so the agent can email the team it routes to.</p></div>
+</div>
+<div class="fields">
+<div class="field"><div class="field-head"><span class="code-label">Name</span><button class="copy" data-target="f1" type="button">Copy</button></div><div class="field-val" id="f1">IT Issue Triage Agent</div></div>
+<div class="field"><div class="field-head"><span class="code-label">Description</span><button class="copy" data-target="f2" type="button">Copy</button></div><div class="field-val" id="f2">Triages IT issues reported by business users: identifies the system and likely root cause, assigns complexity and priority, checks compliance impact and routes the issue to the right team.</div></div>
+<div class="field"><div class="field-head"><span class="code-label">Role</span><button class="copy" data-target="f3" type="button">Copy</button></div><div class="field-val" id="f3">You are an IT issue triage specialist for WTW's IT organisation. Business users report IT problems to you in plain language, sometimes with screenshots.</div></div>
+<div class="field"><div class="field-head"><span class="code-label">Goal</span><button class="copy" data-target="f4" type="button">Copy</button></div><div class="field-val" id="f4">Turn every issue report into a clear, correctly prioritised, compliance-checked triage summary, route it to the right team and tier, and tell the user what happens next.</div></div>
+<div class="field plain"><div class="field-head"><span class="code-label">Features</span></div><div class="field-val">Knowledge base: IT Ops Knowledge. Tool: Outlook, send email. Model: vision-capable.</div></div>
+</div>
+<div class="codewrap"><div class="code-head"><span class="code-label">Instructions</span><button class="copy" data-target="c1" type="button">Copy</button></div><pre id="c1"><code>Follow these steps for every issue:
+
+1. UNDERSTAND
+- Read the user's message and any attached screenshot. Treat everything visible in the screenshot as known: system name, client, region, dates and error messages. Never ask the user for something the screenshot already shows.
+- If you cannot identify the affected system, ask the user up to 3 short follow-up questions before triaging.
+- If the system is known but the impact or urgency is unclear, do not ask. Triage using the knowledge base (for example, check which other clients or systems depend on the failed component), state your assumptions and list what the user should confirm.
+
+2. INVESTIGATE (use the knowledge base for every fact)
+- Identify the affected system and its owning team from the Systems and Ownership Register.
+- Check dependencies. If the symptom is in one system but the likely root cause is in another, say so.
+- Find matching past incidents and the relevant runbook.
+
+3. ASSESS
+- Assign complexity (L1, L2 or L3) and priority (P1 to P4) using the Severity, Complexity and Compliance Policy. Give a one-line reason for each.
+- Check every compliance rule (CMP-01 to CMP-05). List each rule that applies with its rule ID and required action, or write "None".
+
+4. ROUTE
+- Route to the team that owns the likely root cause, at the tier matching the complexity. Copy the team that owns the symptom if different. If any compliance rule applies, also copy Client Data Governance.
+- Use the Outlook tool to email the routed team the triage summary.
+
+5. RESPOND
+Reply to the user in two parts.
+
+Part A, for the user, plain language, 3 sentences at most: what is likely wrong, who has it, and what happens next.
+
+Part B, triage summary:
+- Issue: one technical line
+- Affected system / likely root cause:
+- Complexity: L_ and reason
+- Priority: P_ and reason
+- Compliance flags: rule ID, flag, action (or None)
+- Routed to: team, tier, email. Copied:
+- Similar incidents:
+- Next steps: start with the runbook ID and its first steps
+- Assumptions to confirm:
+- Sources: documents used
+
+RULES
+- Only use facts from the knowledge base, the user's message or the screenshot. If something is in none of them, write "Not found in knowledge base".
+- The same issue should always get the same complexity, priority and routing.</code></pre></div>
+</section>
+
+<!-- 07 -->
+<section id="tests"><p class="eyebrow">07</p><h2>Tests</h2>
+<p class="note">Click a test to open it. T1 is the main demo.</p>
+<div class="tests">
+<details class="test"><summary><span class="tid">T1</span>Tom’s stale client report</summary><div class="test-body"><div class="codewrap"><div class="code-head"><span class="code-label">Paste into the agent and attach tom_report_screenshot.png</span><button class="copy" data-target="t1" type="button">Copy</button></div><pre id="t1"><code>Client reports are showing last month's numbers, and the call is tomorrow.</code></pre></div>
+<p class="eyebrow outcome-label">Expected outcome</p>
+<dl class="outcome">
+<dt>System</dt><dd>Client Reporting Portal. Root cause in the Nightly Data Refresh: NDR-NIGHTLY failed on the missing fund_code column, so CRP still shows 30 September data.</dd>
+<dt>Assessment</dt><dd><strong>L2</strong>, a fix within one system. <strong>P2</strong>, client-facing with a call within 48 hours. P1 is also acceptable if it reasons that every CRP client is affected and says so.</dd>
+<dt>Compliance</dt><dd><strong>CMP-01</strong> client data accuracy. Notify Client Data Governance within 24 hours.</dd>
+<dt>Routed to</dt><dd>Data Engineering L2, copying Reporting Platform L2 and Client Data Governance. Email arrives.</dd>
+<dt>Cites</dt><dd>INC-2291 and RB-011.</dd>
+<dt>Pass if</dt><dd>It doesn’t ask which system, and it says not to rerun the job before the schema is fixed (RB-011 step 3).</dd>
+<dt>Teaching point</dt><dd>The symptom is in one system and the cause in another. The agent routes to the cause.</dd>
+</dl></div></details>
+<details class="test"><summary><span class="tid">T2</span>Locked out of TimeTrack</summary><div class="test-body"><div class="codewrap"><div class="code-head"><span class="code-label">Paste into the agent</span><button class="copy" data-target="t2" type="button">Copy</button></div><pre id="t2"><code>I can't log in to TimeTrack since this morning, it says my account is locked.</code></pre></div>
+<p class="eyebrow outcome-label">Expected outcome</p>
+<dl class="outcome">
+<dt>Assessment</dt><dd>Identity Platform. <strong>L1, P4.</strong> Compliance: none.</dd>
+<dt>Routed to</dt><dd>Service Desk, following RB-014. May cite INC-2310.</dd>
+<dt>Pass if</dt><dd>No over-escalation. It treats a simple issue as simple.</dd>
+</dl></div></details>
+<details class="test"><summary><span class="tid">T3</span>Wrong benefit figures after a release</summary><div class="test-body"><div class="codewrap"><div class="code-head"><span class="code-label">Paste into the agent</span><button class="copy" data-target="t3" type="button">Copy</button></div><pre id="t3"><code>Benefit statements generated today for our German clients show retirement amounts about 3% higher than last month. A release went out last night.</code></pre></div>
+<p class="eyebrow outcome-label">Expected outcome</p>
+<dl class="outcome">
+<dt>System</dt><dd>Benefits Calculation Engine, flowing into DocGen statements.</dd>
+<dt>Assessment</dt><dd><strong>L3, P1.</strong> Wrong financial figures delivered to members.</dd>
+<dt>Compliance</dt><dd><strong>CMP-02</strong> financial accuracy.</dd>
+<dt>Routed to</dt><dd>Calculation Services L3, copying Reporting Platform and Client Data Governance.</dd>
+<dt>Next steps</dt><dd>RB-022, starting with pausing DocGen statement runs. Cites INC-2347.</dd>
+</dl></div></details>
+<details class="test"><summary><span class="tid">T4</span>Not enough to go on</summary><div class="test-body"><div class="codewrap"><div class="code-head"><span class="code-label">Paste into the agent</span><button class="copy" data-target="t4" type="button">Copy</button></div><pre id="t4"><code>The portal is really slow.</code></pre></div>
+<p class="eyebrow outcome-label">Expected outcome</p>
+<dl class="outcome">
+<dt>Answer</dt><dd>Asks which portal, since when, and who is affected, as RB-030 suggests. No triage yet.</dd>
+<dt>Teaching point</dt><dd>It asks when it genuinely can’t tell, instead of guessing.</dd>
+</dl></div></details>
+<details class="test"><summary><span class="tid">T5</span>Two issues in one message</summary><div class="test-body"><div class="codewrap"><div class="code-head"><span class="code-label">Paste into the agent</span><button class="copy" data-target="t5" type="button">Copy</button></div><pre id="t5"><code>The Northbridge client report is still showing September data, and German benefit statements look about 3% too high since last night's release.</code></pre></div>
+<p class="eyebrow outcome-label">Expected outcome</p>
+<dl class="outcome">
+<dt>Ideal</dt><dd>Two separate triages: CRP and NDR at P2 to Data Engineering, BCE at P1 to Calculation Services, each with its own compliance flag.</dd>
+<dt>What often happens</dt><dd>One agent blends them, or gives the second issue less attention.</dd>
+<dt>Teaching point</dt><dd>The bridge to multi-agent. Run it beforehand; use it live only if the single agent slips.</dd>
+</dl></div></details>
+</div>
+</section>
+
+<!-- 08 -->
+<section id="why-multi"><p class="eyebrow">08</p><h2>Why multi-agent</h2>
+<p class="lead">The single agent works. The question is what happens when it meets production.</p>
+<div class="scale">
+<div class="col"><p class="eyebrow">The demo today</p>
+<div class="stat"><span class="n">5</span><span class="l">documents</span></div>
+<div class="stat"><span class="n">1</span><span class="l">tool</span></div>
+<div class="stat"><span class="n">1</span><span class="l">set of rules</span></div></div>
+<div class="arrow">→</div>
+<div class="col big"><p class="eyebrow">In production</p>
+<div class="stat"><span class="n">500+</span><span class="l">documents</span></div>
+<div class="stat"><span class="n">10+</span><span class="l">tools and systems</span></div>
+<div class="stat"><span class="n">6</span><span class="l">teams changing their rules</span></div></div>
+</div>
+<figure><svg viewBox="0 0 784 330" role="img" aria-label="Left: one agent holding six jobs in one long prompt. Right: a manager agent delegating to six specialist agents, including a separate reviewer." class="diagram">
+<defs><marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8A857C"/></marker></defs>
+<text x="24" y="30" class="d-mono">ONE AGENT</text>
+<text x="400" y="30" class="d-mono">A TEAM OF AGENTS</text>
+<rect x="24" y="46" width="320" height="262" rx="6" fill="#FFFFFF" stroke="#1F2022" stroke-width="1.5"/>
+<text x="184" y="72" class="d-name" text-anchor="middle">One prompt, six jobs</text>
+<g fill="#F1F0EE" stroke="#E3E1DE"><rect x="44" y="86" width="280" height="30" rx="4"/><rect x="44" y="122" width="280" height="30" rx="4"/><rect x="44" y="158" width="280" height="30" rx="4"/><rect x="44" y="194" width="280" height="30" rx="4"/><rect x="44" y="230" width="280" height="30" rx="4"/></g>
+<g class="d-sub"><text x="58" y="106">Read the screenshot</text><text x="58" y="142">Look up systems and incidents</text><text x="58" y="178">Check compliance rules</text><text x="58" y="214">Assess and prioritise</text><text x="58" y="250">Route and email</text></g>
+<rect x="44" y="266" width="280" height="30" rx="4" fill="#FFFFFF" stroke="#FE4B1E" stroke-dasharray="4 3"/>
+<text x="58" y="286" class="d-sub">Check its own work</text>
+<rect x="470" y="46" width="220" height="48" rx="6" fill="#FFFFFF" stroke="#1F2022" stroke-width="1.5"/>
+<text x="580" y="75" class="d-name" text-anchor="middle">Manager agent</text>
+<g fill="none" stroke="#8A857C" stroke-width="1.25"><path d="M580 96V130"/><path d="M455 130H705"/>
+<path d="M455 130V160" marker-end="url(#a3)"/><path d="M580 130V160" marker-end="url(#a3)"/><path d="M705 130V160" marker-end="url(#a3)"/>
+<path d="M455 210V236" marker-end="url(#a3)"/><path d="M580 210V236" marker-end="url(#a3)"/><path d="M705 210V236" marker-end="url(#a3)"/></g>
+<g fill="#FFFFFF" stroke="#8A857C"><rect x="400" y="164" width="110" height="44" rx="6"/><rect x="525" y="164" width="110" height="44" rx="6"/><rect x="650" y="164" width="110" height="44" rx="6"/><rect x="400" y="240" width="110" height="44" rx="6"/><rect x="525" y="240" width="110" height="44" rx="6"/></g>
+<rect x="650" y="240" width="110" height="44" rx="6" fill="#FFFFFF" stroke="#FE4B1E" stroke-width="2"/>
+<g class="d-name" text-anchor="middle"><text x="455" y="191">Reader</text><text x="580" y="191">Retriever</text><text x="705" y="191">Compliance</text><text x="455" y="267">Assessor</text><text x="580" y="267">Router</text><text x="705" y="267">Reviewer</text></g>
+<text x="400" y="310" class="d-sub">Illustrative. Architect designs the actual team.</text>
+</svg><figcaption>Monolith versus microservices, for agents</figcaption></figure>
+<div class="why-grid">
+<div class="why-card"><svg viewBox="0 0 64 64" width="64" height="64" aria-hidden="true"><rect x="4" y="14" width="24" height="30" rx="4" fill="none" stroke="#1F2022" stroke-width="2"/><rect x="36" y="14" width="24" height="30" rx="4" fill="none" stroke="#FE4B1E" stroke-width="2"/><path d="M42 29l4 4 8-8" fill="none" stroke="#FE4B1E" stroke-width="2.5"/><path d="M9 24h14M9 30h14M9 36h9" stroke="#8A857C" stroke-width="2"/></svg><div><p class="t">Maker and checker</p><p class="d">The agent that decides is not the one that approves.</p></div></div>
+<div class="why-card"><svg viewBox="0 0 64 64" width="64" height="64" aria-hidden="true"><rect x="8" y="8" width="48" height="12" rx="3" fill="none" stroke="#8A857C" stroke-width="2"/><rect x="8" y="26" width="48" height="12" rx="3" fill="none" stroke="#FE4B1E" stroke-width="2.5"/><rect x="8" y="44" width="48" height="12" rx="3" fill="none" stroke="#8A857C" stroke-width="2"/></svg><div><p class="t">Change one part safely</p><p class="d">A new rule touches one agent, not one giant prompt.</p></div></div>
+<div class="why-card"><svg viewBox="0 0 64 64" width="64" height="64" aria-hidden="true"><circle cx="14" cy="40" r="8" fill="none" stroke="#8A857C" stroke-width="2"/><circle cx="32" cy="34" r="12" fill="none" stroke="#8A857C" stroke-width="2"/><circle cx="50" cy="28" r="10" fill="none" stroke="#FE4B1E" stroke-width="2.5"/></svg><div><p class="t">Right model for each job</p><p class="d">Fast and cheap to read, stronger to judge.</p></div></div>
+<div class="why-card"><svg viewBox="0 0 64 64" width="64" height="64" aria-hidden="true"><path d="M10 32h44" stroke="#8A857C" stroke-width="2"/><circle cx="10" cy="32" r="6" fill="#FFFFFF" stroke="#8A857C" stroke-width="2"/><circle cx="32" cy="32" r="6" fill="#FFFFFF" stroke="#FE4B1E" stroke-width="2.5"/><circle cx="54" cy="32" r="6" fill="#FFFFFF" stroke="#8A857C" stroke-width="2"/><path d="M28 18l8 8M36 18l-8 8" stroke="#FE4B1E" stroke-width="2.5"/></svg><div><p class="t">See where it failed</p><p class="d">Traces show which step went wrong, not just the final answer.</p></div></div>
+</div>
+<p class="honest">One agent is the right choice for simple, contained jobs. Go multi-agent when the work grows, the rules change, or someone needs to audit the decision.</p>
+</section>
+
+<!-- 09 -->
+<section id="architect"><p class="eyebrow">09</p><h2>Architect prompt</h2>
+<p>We describe the problem and the outcome, not the agents. Architect decides how to split the work. We look at what it designed, and run it in Session 2.</p>
+<div class="codewrap"><div class="code-head"><span class="code-label">Paste into Architect</span><button class="copy" data-target="arch" type="button">Copy</button></div><pre id="arch"><code>Build an IT Issue Intake and Triage system for WTW's IT organisation.
+
+THE PROBLEM
+Business users (operations, client service, finance) report IT problems in plain language, often with a screenshot. Today these reports sit in a queue until someone works out what the issue is, how serious it is, whether it creates a compliance risk, and which engineering team should fix it. This takes hours or days and depends on who picks it up.
+
+WHAT THE SYSTEM SHOULD DO
+1. Take an issue report from a business user in chat, in plain language, with an optional screenshot.
+2. Read any attached screenshot and pull out error messages, the affected system, the client and region, and any dates shown. Never ask the user for something the screenshot already shows.
+3. If the affected system cannot be identified, ask the user up to 3 short follow-up questions before triaging. If the system is known but the impact or urgency is unclear, triage anyway, state the assumptions and list what the user should confirm.
+4. Turn the report into a clear technical description of the issue.
+5. Identify the affected system, its owning team and its dependencies. If the symptom appears in one system but the likely root cause is in another, say so.
+6. Find similar past incidents and the relevant runbook.
+7. Assign a complexity level (L1, L2 or L3) and a priority (P1 to P4) using the policy in the knowledge base, with a one-line reason for each.
+8. Check the issue against every compliance rule in the policy (CMP-01 to CMP-05). List each rule that applies with its rule ID and required action, or state that none apply.
+9. Check every finding against the knowledge base before anything goes out. Remove anything not supported by a source. Flag P1 issues and low-confidence results for human review.
+10. Route the issue to the team that owns the likely root cause, at the tier matching its complexity. Copy the team that owns the symptom if different, and copy Client Data Governance whenever a compliance rule applies.
+11. Email the routed team the full triage summary through Outlook.
+12. Reply to the business user.
+
+KNOWLEDGE BASE
+Five documents: Systems and Ownership Register, Team Roster and Escalation, Runbooks, Past Incidents, and IT Issue Severity, Complexity and Compliance Policy. Use only these documents, the user's message and the screenshot as sources of fact.
+
+OUTPUT
+The reply to the user has two parts:
+A) A plain-language answer of no more than 3 sentences: what is likely wrong, who has it, and what happens next.
+B) A triage summary with: issue, affected system and likely root cause, complexity with reason, priority with reason, compliance flags with rule IDs and actions, routed team and tier with who is copied, similar past incidents, next steps starting with the runbook, assumptions to confirm, and the sources used.
+The email to the engineering team contains the triage summary.
+
+RULES
+- If information is not in the knowledge base, the message or the screenshot, say "Not found in knowledge base" rather than inventing it.
+- The same issue should always get the same complexity, priority and routing.</code></pre></div>
+<h3>Next session</h3>
+<ul>
+<li>Open the system Architect designed and walk through its agents.</li>
+<li>Run Tom’s issue and T5 through it, side by side with the single agent.</li>
+<li>Add guardrails and hallucination controls in Studio, and make it production-ready.</li>
+</ul>
+<footer>Lyzr x WTW · Session 1 · Synthetic demo data</footer>
+</section>
+</main>
+</div>
+
+<script>
+document.querySelectorAll('button.copy').forEach(function(b){
+  b.addEventListener('click',function(){
+    var t=document.getElementById(b.dataset.target).innerText;
+    function ok(){b.textContent='Copied';b.classList.add('done');setTimeout(function(){b.textContent='Copy';b.classList.remove('done')},1600)}
+    function fb(){var a=document.createElement('textarea');a.value=t;a.style.position='fixed';a.style.opacity='0';document.body.appendChild(a);a.select();try{document.execCommand('copy');ok()}catch(e){}document.body.removeChild(a)}
+    try{ if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(t).then(ok,fb)} else {fb()} }catch(e){fb()}
+  });
+});
+var links=document.querySelectorAll('aside a');
+var obs=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){links.forEach(function(l){l.classList.toggle('active',l.getAttribute('href')==='#'+e.target.id)})}})},{rootMargin:'-20% 0px -70% 0px'});
+document.querySelectorAll('main section').forEach(function(s){obs.observe(s)});
+</script>
+</body>
+</html>
